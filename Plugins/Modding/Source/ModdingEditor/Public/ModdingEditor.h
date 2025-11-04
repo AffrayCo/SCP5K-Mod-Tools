@@ -21,5 +21,9 @@ public:
 	FDelegateHandle LauncherCallbackHandle;
 	FDelegateHandle LauncherStartedCallbackHandle;
 
+	void OnNewPluginCreated(IPlugin& Plugin);
+
+	bool IsMod (TSharedPtr<IPlugin> Plugin);
+
 	static void LoadTagPathForMod (TSharedRef<IPlugin> Mod);
 };

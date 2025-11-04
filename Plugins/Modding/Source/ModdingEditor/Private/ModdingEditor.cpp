@@ -3,6 +3,7 @@
 #include "GameplayTagsManager.h"
 #include "ILauncherServicesModule.h"
 #include "Engine/AssetManager.h"
+#include "Engine/AssetManagerSettings.h"
 #include "Interfaces/IPluginManager.h"
 
 #define LOCTEXT_NAMESPACE "FModdingEditorModule"
@@ -18,10 +19,18 @@ void FModdingEditorModule::StartupModule()
 	TArray<FPrimaryAssetTypeInfo> AssetTypeInfo;
 	UAssetManager::GetIfValid()->GetPrimaryAssetTypeInfoList(AssetTypeInfo);
 	TArray<FString> PluginPaths;
+
+	FString ModdingPluginPath;
+	bool bFoundModdingPlugin = false;
 	
 	for (int32 i = 0; i < Plugins.Num(); i++)
 	{
-		if (Plugins[i]->IsEnabled() && Plugins[i]->GetDescriptor().Category.Contains("Mods"))
+		if (Plugins[i]->GetName() == TEXT("Modding"))
+		{
+			ModdingPluginPath = Plugins[i]->GetBaseDir()/"Config";
+			bFoundModdingPlugin = true;
+		}
+		else if (Plugins[i]->IsEnabled() && IsMod(Plugins[i]))
 		{
 			UE_LOG(LogModdingEditor, Display, TEXT("Found Mod %s, Adding to primary asset search paths."), *Plugins[i]->GetName())
 			LoadTagPathForMod(Plugins[i]);
@@ -30,6 +39,14 @@ void FModdingEditorModule::StartupModule()
 		}
 	}
 
+	if (PluginPaths.Num() <= 0)
+	{
+		UE_LOG(LogModdingEditor, Warning, TEXT("Didn't find any mods in initial search. Make sure to set the category of your plugin file to \"Mods\" to automatically register search paths and enable gameplay tag support."))
+	}
+
+	if (bFoundModdingPlugin)
+	{
+	}
 	for (FPrimaryAssetTypeInfo& TypeInfo : AssetTypeInfo)
 	{
 		TypeInfo.AssetScanPaths.Append(PluginPaths);
@@ -38,6 +55,8 @@ void FModdingEditorModule::StartupModule()
 
 	ILauncherServicesModule& ProjectLauncherServicesModule = FModuleManager::LoadModuleChecked<ILauncherServicesModule>("LauncherServices");
 	LauncherCallbackHandle = ProjectLauncherServicesModule.OnCreateLauncherDelegate.AddRaw(this, &FModdingEditorModule::OnLauncherCreated);
+	IPluginManager::Get().OnNewPluginCreated().AddRaw(this, OnNewPluginCreated);
+
 }
 
 void FModdingEditorModule::ShutdownModule()
@@ -118,6 +137,27 @@ void FModdingEditorModule::OnLauncherCompleted(bool Succeeded, double TotalTime,
 			break;
 		}
 	}
+}
+void FModdingEditorModule::OnNewPluginCreated(IPlugin& Plugin)
+{
+	TSharedRef<IPlugin> SharedPlugin = MakeShared<IPlugin>(Plugin);
+	if (IsMod(SharedPlugin))
+	{
+		LoadTagPathForMod(SharedPlugin);
+
+		TArray<FPrimaryAssetTypeInfo> AssetTypeInfo;
+		UAssetManager::GetIfValid()->GetPrimaryAssetTypeInfoList(AssetTypeInfo);
+		for (FPrimaryAssetTypeInfo& TypeInfo : AssetTypeInfo)
+		{
+			TypeInfo.AssetScanPaths.AddUnique("/"+SharedPlugin->GetName());
+			UAssetManager::GetIfValid()->ScanPathForPrimaryAssets(TypeInfo.PrimaryAssetType, "/"+SharedPlugin->GetName(), TypeInfo.AssetBaseClassLoaded, TypeInfo.bHasBlueprintClasses, TypeInfo.bIsEditorOnly, true);
+		}
+	}
+}
+bool FModdingEditorModule::IsMod(TSharedPtr<IPlugin> Plugin)
+{
+	FString Category = Plugin->GetDescriptor().Category;
+	return Category.Contains("Mods") || Category == TEXT("User Mod") || Category == TEXT("Mod");
 }
 void FModdingEditorModule::LoadTagPathForMod(TSharedRef<IPlugin> Mod)
 {
