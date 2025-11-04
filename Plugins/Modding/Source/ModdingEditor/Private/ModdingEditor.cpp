@@ -55,7 +55,7 @@ void FModdingEditorModule::StartupModule()
 
 	ILauncherServicesModule& ProjectLauncherServicesModule = FModuleManager::LoadModuleChecked<ILauncherServicesModule>("LauncherServices");
 	LauncherCallbackHandle = ProjectLauncherServicesModule.OnCreateLauncherDelegate.AddRaw(this, &FModdingEditorModule::OnLauncherCreated);
-	IPluginManager::Get().OnNewPluginCreated().AddRaw(this, OnNewPluginCreated);
+	IPluginManager::Get().OnNewPluginCreated().AddRaw(this, &FModdingEditorModule::OnNewPluginCreated);
 
 }
 
