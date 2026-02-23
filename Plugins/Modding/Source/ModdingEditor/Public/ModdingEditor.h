@@ -25,5 +25,5 @@ public:
 
 	bool IsMod (TSharedPtr<IPlugin> Plugin);
 
-	static void LoadTagPathForMod (TSharedRef<IPlugin> Mod);
+	static void LoadTagPathForMod (TSharedPtr<IPlugin> Mod);
 };

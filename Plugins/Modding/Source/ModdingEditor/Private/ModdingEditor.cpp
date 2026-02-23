@@ -140,7 +140,7 @@ void FModdingEditorModule::OnLauncherCompleted(bool Succeeded, double TotalTime,
 }
 void FModdingEditorModule::OnNewPluginCreated(IPlugin& Plugin)
 {
-	TSharedRef<IPlugin> SharedPlugin = MakeShared<IPlugin>(Plugin);
+	TSharedPtr<IPlugin> SharedPlugin = TSharedPtr<IPlugin>(&Plugin);
 	if (IsMod(SharedPlugin))
 	{
 		LoadTagPathForMod(SharedPlugin);
@@ -149,8 +149,8 @@ void FModdingEditorModule::OnNewPluginCreated(IPlugin& Plugin)
 		UAssetManager::GetIfValid()->GetPrimaryAssetTypeInfoList(AssetTypeInfo);
 		for (FPrimaryAssetTypeInfo& TypeInfo : AssetTypeInfo)
 		{
-			TypeInfo.AssetScanPaths.AddUnique("/"+SharedPlugin->GetName());
-			UAssetManager::GetIfValid()->ScanPathForPrimaryAssets(TypeInfo.PrimaryAssetType, "/"+SharedPlugin->GetName(), TypeInfo.AssetBaseClassLoaded, TypeInfo.bHasBlueprintClasses, TypeInfo.bIsEditorOnly, true);
+			TypeInfo.AssetScanPaths.AddUnique("/"+Plugin.GetName());
+			UAssetManager::GetIfValid()->ScanPathForPrimaryAssets(TypeInfo.PrimaryAssetType, "/"+Plugin.GetName(), TypeInfo.AssetBaseClassLoaded, TypeInfo.bHasBlueprintClasses, TypeInfo.bIsEditorOnly, true);
 		}
 	}
 }
@@ -159,7 +159,7 @@ bool FModdingEditorModule::IsMod(TSharedPtr<IPlugin> Plugin)
 	FString Category = Plugin->GetDescriptor().Category;
 	return Category.Contains("Mods") || Category == TEXT("User Mod") || Category == TEXT("Mod");
 }
-void FModdingEditorModule::LoadTagPathForMod(TSharedRef<IPlugin> Mod)
+void FModdingEditorModule::LoadTagPathForMod(TSharedPtr<IPlugin> Mod)
 {
 	FString TagPath = Mod->GetBaseDir() / TEXT("Config/Tags/");
 	if (FPaths::DirectoryExists(TagPath))
