@@ -23,7 +23,7 @@ public:
 
 	void OnNewPluginCreated(IPlugin& Plugin);
 
-	bool IsMod (TSharedPtr<IPlugin> Plugin);
+	static bool IsMod (TSharedPtr<IPlugin> Plugin);
 
 	static void LoadTagPathForMod (TSharedPtr<IPlugin> Mod);
 };
